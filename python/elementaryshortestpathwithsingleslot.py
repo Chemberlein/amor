@@ -65,7 +65,7 @@ class Instance:
             total_cost = 0
             current_time = -math.inf
             location_pred_id = 0
-            for location_id in data["locations"] + [0]:
+            for location_id in data["locations"]:
                 location = self.locations[location_id]
                 t = current_time + self.duration(location_pred_id, location_id)
                 if t <= location.visit_interval[0]:
@@ -74,6 +74,7 @@ class Instance:
                     on_time = False
                 total_cost += self.cost(location_pred_id, location_id)
                 location_pred_id = location_id
+            total_cost += self.cost(location_pred_id, 0)
             number_of_duplicates = len(locations) - len(set(locations))
             is_feasible = (
                     (number_of_duplicates == 0)
@@ -84,42 +85,9 @@ class Instance:
             print(f"Feasible: {is_feasible}")
             print(f"Cost: {total_cost}")
             return (is_feasible, total_cost)
-class Noed:
-    def __init__(self,visitedNoeds,lastVisitedNoed,time,cost):
-        self.visitedNoeds = visitedNoeds
-        self.lastVisitedNoed = lastVisitedNoed
-        self.time = time
-        self.cost = cost
+
 
 def dynamic_programming(instance):
-    # TODO START
-    #Sorting instances in order of time slot start point
-    '''    
-    DP=[[]]
-    n=len(instance.locations)
-    for i in range(1,n):
-        DP[0].append(Noed([i],i,instance.locations[i].visit_interval[1],instance.cost(0,i)))
-    while(True):
-        newH = []
-        for j in DP[-1]:
-            for k in range(1,n):
-                time = j.time + instance.duration(j.lastVisitedNoed,k)
-                if k not in j.visitedNoeds and time <= instance.locations[k].visit_interval[0] : 
-                    time = instance.locations[k].visit_interval[1]
-                    newH.append(Noed(j.visitedNoeds+[k],k,time,instance.cost(j.lastVisitedNoed,k)+j.cost))
-        if (len(newH)==0):
-            break
-        DP.append(newH)
-    optimal = None
-    ans=[]
-    for j in DP:
-        for i in j:
-            time = i.time + instance.duration(i.lastVisitedNoed,0)
-            if time <= instance.locations[0].visit_interval[0] and (optimal == None or i.cost < optimal.cost):
-                optimal=i
-                ans = list(optimal.visitedNoeds)
-    return  ans
-    '''    
     tmpLoc = [item for item in instance.locations if item.id!=0]
     tmpLoc = sorted(tmpLoc,key = lambda x:x.visit_interval[0])
     dp = [ math.inf for i in range(len(tmpLoc))]
@@ -128,16 +96,16 @@ def dynamic_programming(instance):
         price = math.inf
         bt = []
         for j in range(1,i):
-            if tmpLoc[i-j].visit_interval[1]+instance.duration(tmpLoc[i].id,tmpLoc[i-j].id)<tmpLoc[i].visit_interval[0]:
-                if price > dp[i-j]:
-                    price = dp[i-j]
-                    bt=backtracking[i-j]
-        if tmpLoc[i].visit_interval[1]+instance.duration(tmpLoc[i].id,0)<instance.locations[0].visit_interval[0]:
-            if len(bt)>0 and price+instance.cost(bt[-1],tmpLoc[i].id) < instance.cost(0,tmpLoc[i].id):
-                dp[i]=price+instance.cost(bt[-1],tmpLoc[i].id)
-                backtracking[i]=bt+backtracking[i]
-            else:
-                dp[i]= instance.cost(0,tmpLoc[i].id)
+            #if tmpLoc[i-j].visit_interval[1]+instance.duration(tmpLoc[i].id,tmpLoc[i-j].id)<tmpLoc[i].visit_interval[0]:
+            if price > dp[i-j]:
+                price = dp[i-j]
+                bt=backtracking[i-j]
+        #if tmpLoc[i].visit_interval[1]+instance.duration(tmpLoc[i].id,0)<instance.locations[0].visit_interval[0]:
+        if len(bt)>0 and price+instance.cost(bt[-1],tmpLoc[i].id) < instance.cost(0,tmpLoc[i].id):
+            dp[i]=price+instance.cost(bt[-1],tmpLoc[i].id)
+            backtracking[i]=bt+backtracking[i]
+        else:
+            dp[i]= instance.cost(0,tmpLoc[i].id)
     maxi=-1
     m = math.inf
     for i in range(len(dp)):
@@ -148,7 +116,6 @@ def dynamic_programming(instance):
     if maxi == -1:
         return []
     return backtracking[maxi]
-    # TODO END
 
 
 if __name__ == "__main__":
