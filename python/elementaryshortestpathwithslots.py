@@ -202,7 +202,7 @@ class BranchingScheme:
         # TODO END
 
     def equals(self, node_1, node_2):
-        # TODO START
+        # TODO START 
         # I don't undestand well this method may be usefull to chek and return true if visited and time equals
         return False
         # TODO END
