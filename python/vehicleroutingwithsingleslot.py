@@ -179,11 +179,12 @@ def get_parameters(instance):
 
 def to_solution(columns, fixed_columns):
     solution = []
-    for column, value in fixed_columns:
+    for column_id, column_value in fixed_columns:
+        column = columns[column_id]
         s = []
-        for index, coef in zip(column.row_indices, column.row_coefficients):
-            s += [index] * coef
-        solution.append((value, s))
+        for row_index, row_coefficient in zip(column.row_indices,column.row_coefficients):
+            s += [row_index+1] * row_coefficient
+        solution.append(s)
     return solution
 
 
@@ -213,9 +214,16 @@ if __name__ == "__main__":
 
     elif args.algorithm == "column_generation":
         instance = Instance(args.instance)
-        output = columngenerationsolverpy.column_generation(
-                get_parameters(instance))
-
+        parameters =get_parameters(instance) 
+        output = columngenerationsolverpy.column_generation(parameters)
+        solution = to_solution(parameters.columns, output["solution"])
+        if args.certificate is not None:
+            print("helloS")
+            data = {"locations": solution}
+            with open(args.certificate, 'w') as json_file:
+                json.dump(data, json_file)
+            print()
+            instance.check(args.certificate)
     else:
         instance = Instance(args.instance)
         parameters = get_parameters(instance)
