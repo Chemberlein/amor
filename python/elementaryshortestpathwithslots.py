@@ -67,7 +67,7 @@ class Instance:
             total_cost = 0
             current_time = -math.inf
             location_pred_id = 0
-            for location_id in data["locations"] + [0]:
+            for location_id in data["locations"]:
                 location = self.locations[location_id]
                 t = current_time + self.duration(location_pred_id, location_id)
                 try:
@@ -80,6 +80,7 @@ class Instance:
                     on_time = False
                 total_cost += self.cost(location_pred_id, location_id)
                 location_pred_id = location_id
+            total_cost += self.cost(location_pred_id, 0)
             number_of_duplicates = len(locations) - len(set(locations))
             is_feasible = (
                     (number_of_duplicates == 0)
@@ -121,11 +122,13 @@ class BranchingScheme:
     def root(self):
         node = self.Node()
         node.father = None
+        # TODO START
         node.visited = (1 << 0)
         node.number_of_locations = 1
         node.j = 0
         node.cost = 0
         node.time = -math.inf
+        # TODO END
         node.guide = 0
         node.id = self.id
         self.id += 1
@@ -174,36 +177,32 @@ class BranchingScheme:
         self.id += 1
         return child
 
-        # TODO END
-
     def infertile(self, node):
         # TODO START
-        return  node.next_child_pos == len(self.instance.locations) 
+        return  node.next_child_pos == len(self.instance.locations)
         # TODO END
 
     def leaf(self, node):
-        # TODO START   may be just true 
-        return True
+        # TODO START
+        return False
         # TODO END
 
     def bound(self, node_1, node_2):
         # TODO START
-        # Check if node_2 is feasible. ?????????
-        return node_2.time + self.instance.duration(0,node_2.j) > self.instance.locations[0].visit_intervals[0][0] and node_2.time + self.instance.duration(0,node_2.j) > self.instance.locations[0].visit_intervals[0][1]
+        return False
         # TODO END
 
     # Solution pool.
 
     def better(self, node_1, node_2):
         # TODO START
-        if  node_1.cost + self.instance.cost(0,node_1.j) > node_2.cost+self.instance.cost(0,node_2.j) :
+        if  node_1.cost + self.instance.cost(node_1.j,0) > node_2.cost+self.instance.cost(node_2.j,0) :
             return False
         return True
         # TODO END
 
     def equals(self, node_1, node_2):
-        # TODO START 
-        # I don't undestand well this method may be usefull to chek and return true if visited and time equals
+        # TODO START
         return False
         # TODO END
 
@@ -215,42 +214,37 @@ class BranchingScheme:
         # TODO END
 
     class Bucket:
+
         def __init__(self, node):
             self.node = node
+
         def __hash__(self):
             # TODO START
-            return hash((self.node.j, self.node.visited,self.node.time))
+            return hash((self.node.j, self.node.visited))
             # TODO END
+
         def __eq__(self, other):
             # TODO START
             return (
                 # Same last location.
                 self.node.j == other.node.j
                 # Same visited locations.
-                and self.node.visited == other.node.visited
-                # Same time.
-                and self.node.time == other.node.time)
+                and self.node.visited == other.node.visited)
             # TODO END
 
-
     def dominates(self, node_1, node_2):
-        # TODO START # and node_1.time <= node_2.time
-        if node_1.cost + self.instance.cost(0,node_1.j) < node_2.cost+self.instance.cost(0,node_2.j) :
-            return True
-        if (node_1.cost + self.instance.cost(0,node_1.j) == node_2.cost+self.instance.cost(0,node_2.j) and node_1.number_of_locations>node_2.number_of_locations):
-            return True
-        if (node_1.cost + self.instance.cost(0,node_1.j) == node_2.cost+self.instance.cost(0,node_2.j) and node_1.time<node_2.time):
+        # TODO START
+        #if (node_1.cost + self.instance.cost(node_1.j,0) <= node_2.cost+self.instance.cost(node_2.j,0) and node_1.time<=node_2.time):
+        if (node_1.cost  <= node_2.cost and node_1.time <= node_2.time):
             return True
         return False
+        
         # TODO END
 
     # Outputs.
+
     def display(self, node):
         # TODO START
-        # Check if node is feasible.
-        if node.number_of_locations < len(self.instance.locations):
-            return ""
-        # Compute the objective value of node.
         d = node.cost + self.instance.cost(node.j, 0)
         return str(d)
         # TODO END
@@ -265,6 +259,7 @@ class BranchingScheme:
         locations.reverse()
         return locations
         # TODO END
+
 
 if __name__ == "__main__":
     import argparse
