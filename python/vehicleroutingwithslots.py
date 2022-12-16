@@ -1,6 +1,9 @@
 import json
 import math
 import columngenerationsolverpy
+import treesearchsolverpy
+from elementaryshortestpathwithslots import Instance as SubInst
+from elementaryshortestpathwithslots import BranchingScheme
 
 
 class Location:
@@ -14,6 +17,7 @@ class Instance:
 
     def __init__(self, filepath=None):
         self.locations = []
+        self.locationsWD = []
         if filepath is not None:
             with open(filepath) as json_file:
                 data = json.load(json_file)
@@ -23,7 +27,9 @@ class Instance:
                         data["ys"])
                 for (intervals, x, y) in locations:
                     self.add_location(intervals, x, y)
-
+        for i in self.locations:
+            if(i.id!=0):
+                self.locationsWD.append(i)
     def add_location(self, visit_intervals, x, y):
         location = Location()
         location.id = len(self.locations)
@@ -57,7 +63,7 @@ class Instance:
             for locations in data["locations"]:
                 current_time = -math.inf
                 location_pred_id = 0
-                for location_id in locations + [0]:
+                for location_id in locations:
                     location = self.locations[location_id]
                     d = self.duration(location_pred_id, location_id)
                     total_travelled_distance += d
@@ -71,6 +77,7 @@ class Instance:
                     except ValueError:
                         on_time = False
                     location_pred_id = location_id
+                total_travelled_distance += self.duration(location_pred_id, 0)
             # Compute number_of_locations.
             number_of_duplicates = len(locations) - len(set(locations))
 
@@ -91,25 +98,69 @@ class PricingSolver:
     def __init__(self, instance):
         self.instance = instance
         # TODO START
+        self.visitedClients = None
         # TODO END
 
     def initialize_pricing(self, columns, fixed_columns):
         # TODO START
-        pass
+        self.visitedClients = [0] * len(instance.locationsWD)
+        for column_id, column_value in fixed_columns:
+            column = columns[column_id]
+            for row_index, row_coefficient in zip(column.row_indices,column.row_coefficients):
+                self.visitedClients[row_index] += (column_value * row_coefficient)
         # TODO END
 
     def solve_pricing(self, duals):
         # Build subproblem instance.
         # TODO START
+        backTr = {}
+        subInst = SubInst()
+        #add Depot                                                                                                        ???? value ?????          
+        subInst.add_location(self.instance.locations[0].visit_intervals,self.instance.locations[0].x,self.instance.locations[0].y,0)
+        # Here we construct a cost matrix to find the column of minimum reduced cost as described in 3.4 in the report.
+        ordr=1
+        for client_id, client in enumerate(self.instance.locationsWD):
+            value = duals[client_id]
+            if self.visitedClients[client_id]==0:
+                subInst.add_location(client.visit_intervals,client.x,client.y,value)
+                backTr[ordr]=client.id
+                ordr+=1
+        
         # TODO END
 
         # Solve subproblem instance.
         # TODO START
+        branching_scheme = BranchingScheme(subInst)
+        output = treesearchsolverpy.iterative_beam_search(
+                    branching_scheme,
+                    time_limit=30)
+        bt = branching_scheme.to_solution(output["solution_pool"].best)
+        tmp = bt 
+        bt = []
+        for i in tmp:
+            bt.append(backTr[i])
+        
         # TODO END
 
         # Retrieve column.
         column = columngenerationsolverpy.Column()
         # TODO START
+        if (len(bt)==0):
+            return []    
+
+        dist = self.instance.duration(0,self.instance.locations[bt[0]].id) 
+        for i in range(1,len(bt)):
+            dist += instance.duration(instance.locations[i-1].id,instance.locations[i].id)
+        dist += instance.duration(instance.locations[bt[-1]].id,0) 
+    
+        # Retrieve column.
+        column = columngenerationsolverpy.Column()
+        column.objective_coefficient = dist
+        for city in self.instance.locationsWD:
+            if city.id in bt:
+                column.row_indices.append(city.id-1)
+                # Here we retrieve a_{ik} as defined in 3.3 in the report.
+                column.row_coefficients.append(1)
         # TODO END
 
         return [column]
@@ -117,20 +168,39 @@ class PricingSolver:
 
 def get_parameters(instance):
     # TODO START
-    number_of_constraints = None
+    number_of_constraints = len(instance.locationsWD)
     p = columngenerationsolverpy.Parameters(number_of_constraints)
+    maximum_dist = 0
+    for i in range(1,len(instance.locations)):
+        maximum_dist += 2*instance.duration(0,instance.locations[i].id)
+    p.objective_sense = "min"
+    # Column bounds.
+    p.column_lower_bound = 0
+    #maximum_dist*2
+    p.column_upper_bound = maximum_dist*50
+    # Row bounds.
+    # Here we initialize constraints of the master program (section 3.3, equations 12-14 in the report).
+    for city in instance.locationsWD:
+        p.row_lower_bounds[city.id-1] = 1
+        p.row_upper_bounds[city.id-1] = 1
+        p.row_coefficient_lower_bounds[city.id-1] = 0
+        p.row_coefficient_upper_bounds[city.id-1] = 1
+    # Dummy column objective coefficient.
+    p.dummy_column_objective_coefficient = maximum_dist
     # TODO END
     # Pricing solver.
     p.pricing_solver = PricingSolver(instance)
     return p
 
 
+
 def to_solution(columns, fixed_columns):
     solution = []
     for column, value in fixed_columns:
-        # TODO START
-        pass
-        # TODO END
+        s = []
+        for index, coef in zip(column.row_indices, column.row_coefficients):
+            s += [index] * coef
+        solution.append((value, s))
     return solution
 
 
