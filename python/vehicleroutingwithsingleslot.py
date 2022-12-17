@@ -16,7 +16,6 @@ class Instance:
 
     def __init__(self, filepath=None):
         self.locations = []
-        self.locationsWD = []
         if filepath is not None:
             with open(filepath) as json_file:
                 data = json.load(json_file)
@@ -26,9 +25,6 @@ class Instance:
                         data["ys"])
                 for (intervals, x, y) in locations:
                     self.add_location(intervals[0], x, y)
-        for i in self.locations:
-            if(i.id!=0):
-                self.locationsWD.append(i)
     def add_location(self, visit_interval, x, y):
         location = Location()
         location.id = len(self.locations)
@@ -98,11 +94,12 @@ class PricingSolver:
 
     def initialize_pricing(self, columns, fixed_columns):
         # TODO START
-        self.visitedClients = [0] * len(instance.locationsWD)
+        self.visitedClients = [0] * len(instance.locations)
         for column_id, column_value in fixed_columns:
             column = columns[column_id]
             for row_index, row_coefficient in zip(column.row_indices,column.row_coefficients):
                 self.visitedClients[row_index] += (column_value * row_coefficient)
+        self.visitedClients[0]=1
         # TODO END
 
     def solve_pricing(self, duals):
@@ -114,8 +111,10 @@ class PricingSolver:
         subInst.add_location(self.instance.locations[0].visit_interval,self.instance.locations[0].x,self.instance.locations[0].y,0)
         # Here we construct a cost matrix to find the column of minimum reduced cost as described in 3.4 in the report.
         ordr=1
-        for client_id, client in enumerate(self.instance.locationsWD):
+        for client_id, client in enumerate(self.instance.locations):
             value = duals[client_id]
+            if value <= 0:
+                continue
             if self.visitedClients[client_id]==0:
                 subInst.add_location(client.visit_interval,client.x,client.y,value)
                 backTr[ordr]=client.id
@@ -142,17 +141,16 @@ class PricingSolver:
         # Retrieve column.
         column = columngenerationsolverpy.Column()
         column.objective_coefficient = dist
-        for city in self.instance.locationsWD:
-            if city.id in bt:
-                column.row_indices.append(city.id-1)
-                # Here we retrieve a_{ik} as defined in 3.3 in the report.
-                column.row_coefficients.append(1)
+        for city in bt:
+            column.row_indices.append(city)
+            # Here we retrieve a_{ik} as defined in 3.3 in the report.
+            column.row_coefficients.append(1)
         return [column]
 
 
 def get_parameters(instance):
     # TODO START
-    number_of_constraints = len(instance.locationsWD)
+    number_of_constraints = len(instance.locations)
     p = columngenerationsolverpy.Parameters(number_of_constraints)
     maximum_dist = 0
     for i in range(1,len(instance.locations)):
@@ -164,11 +162,15 @@ def get_parameters(instance):
     p.column_upper_bound = maximum_dist*50
     # Row bounds.
     # Here we initialize constraints of the master program (section 3.3, equations 12-14 in the report).
-    for city in instance.locationsWD:
-        p.row_lower_bounds[city.id-1] = 1
-        p.row_upper_bounds[city.id-1] = 1
-        p.row_coefficient_lower_bounds[city.id-1] = 0
-        p.row_coefficient_upper_bounds[city.id-1] = 1
+    for city in instance.locations:
+        p.row_lower_bounds[city.id] = 1
+        p.row_upper_bounds[city.id] = 1
+        p.row_coefficient_lower_bounds[city.id] = 0
+        p.row_coefficient_upper_bounds[city.id] = 1
+    p.row_lower_bounds[0] = 0
+    p.row_upper_bounds[0] = 0
+    p.row_coefficient_lower_bounds[0] = 0
+    p.row_coefficient_upper_bounds[0] = 0
     # Dummy column objective coefficient.
     p.dummy_column_objective_coefficient = maximum_dist
     # TODO END
@@ -183,7 +185,7 @@ def to_solution(columns, fixed_columns):
         column = columns[column_id]
         s = []
         for row_index, row_coefficient in zip(column.row_indices,column.row_coefficients):
-            s += [row_index+1] * row_coefficient
+            s += [row_index] * row_coefficient
         solution.append(s)
     return solution
 
@@ -218,7 +220,6 @@ if __name__ == "__main__":
         output = columngenerationsolverpy.column_generation(parameters)
         solution = to_solution(parameters.columns, output["solution"])
         if args.certificate is not None:
-            print("helloS")
             data = {"locations": solution}
             with open(args.certificate, 'w') as json_file:
                 json.dump(data, json_file)
