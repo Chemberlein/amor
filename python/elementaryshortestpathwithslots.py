@@ -101,11 +101,13 @@ class BranchingScheme:
         id = None
         father = None
         # TODO START
+
         visited = None
         number_of_locations = None
         j = None
         cost = None
         time = None
+
         # TODO END
         guide = None
         next_child_pos = 0
@@ -123,11 +125,14 @@ class BranchingScheme:
         node = self.Node()
         node.father = None
         # TODO START
+
+        # Visiting the root node
         node.visited = (1 << 0)
         node.number_of_locations = 1
         node.j = 0
         node.cost = 0
         node.time = -math.inf
+
         # TODO END
         node.guide = 0
         node.id = self.id
@@ -136,40 +141,37 @@ class BranchingScheme:
 
     def next_child(self, father):
         # TODO START
-        # Find the next location to add to the partial tour.
+
+        # Find the next child to add to the partial tour
         j_next = father.next_child_pos
-        # Update node.next_child_pos.
+        # Update the next child to visit
         father.next_child_pos += 1
-        # If this location has already been visited, return.
+        # If this child has already been visited, return
         if (father.visited >> j_next) & 1:
             return None
         
-        # Check if all predecessors have been visited
-        # if we cant go to the customer in time in time  or if we can't reach depot after customer j_next
-        ts1Inposible = (father.time + self.instance.duration(j_next,father.j) > self.instance.locations[j_next].visit_intervals[0][0]
-            or (self.instance.locations[j_next].visit_intervals[0][1]+ self.instance.duration(j_next,0) > self.instance.locations[0].visit_intervals[0][0]
-                and self.instance.locations[j_next].visit_intervals[0][1]+ self.instance.duration(j_next,0) > self.instance.locations[0].visit_intervals[1][0]
-                )
-            )
-        ts2Inposible = (father.time + self.instance.duration(j_next,father.j) > self.instance.locations[j_next].visit_intervals[1][0]
-                or (self.instance.locations[j_next].visit_intervals[1][1]+ self.instance.duration(j_next,0) > self.instance.locations[0].visit_intervals[0][0]
-                and self.instance.locations[j_next].visit_intervals[1][1]+ self.instance.duration(j_next,0) > self.instance.locations[0].visit_intervals[1][0]
-                )
-            )
-        if   ts1Inposible and ts2Inposible:
+        # Check if the first time slot is infeasible
+        slot_1_impossible = (father.time + self.instance.duration(father.j,j_next) > self.instance.locations[j_next].visit_intervals[0][0])
+        # Check if the second time slot is infeasible
+        slot_2_impossible = (father.time + self.instance.duration(father.j,j_next) > self.instance.locations[j_next].visit_intervals[1][0])
+        # If both time slo
+        if slot_1_impossible and slot_2_impossible:
             return None
         
-        # Build child node.
+        # Build a child node
         child = self.Node()
         child.father = father
         child.visited = father.visited + (1 << j_next)
+        # Length of the current subtour
         child.number_of_locations = father.number_of_locations + 1
         child.j = j_next
+        # Cost of the current subtour
         child.cost = father.cost + self.instance.cost(father.j, j_next)
-        if ts1Inposible:
+        if slot_1_impossible:
             child.time=self.instance.locations[j_next].visit_intervals[1][1]
-        elif ts2Inposible:
-            child.time= self.instance.locations[j_next].visit_intervals[0][1] # fix
+        elif slot_2_impossible:
+            child.time= self.instance.locations[j_next].visit_intervals[0][1]
+        # In case both solts are feasible we pick the one with a smaller starting time
         else:
             child.time= min(self.instance.locations[j_next].visit_intervals[1][1],self.instance.locations[j_next].visit_intervals[0][1]) # fix
         child.guide = child.cost
@@ -179,7 +181,10 @@ class BranchingScheme:
 
     def infertile(self, node):
         # TODO START
+
+        # The subtour cannot have more locations than the total number of location.
         return  node.next_child_pos == len(self.instance.locations)
+
         # TODO END
 
     def leaf(self, node):
@@ -196,9 +201,21 @@ class BranchingScheme:
 
     def better(self, node_1, node_2):
         # TODO START
-        if  node_1.cost + self.instance.cost(node_1.j,0) > node_2.cost+self.instance.cost(node_2.j,0) :
+
+        c1 = node_1.cost + self.instance.cost(node_1.j,0)
+        c2 = node_2.cost+self.instance.cost(node_2.j,0)
+        # Cost of node 1 is worse than cost of node 2.
+        if  c1 > c2:
             return False
+        # Less locations visited in the subtour of node 1 w.r.t. node 2.
+        if  c1==c2 and node_1.number_of_locations < node_2.number_of_locations:
+            return False
+        # Subtour of node 1 finishes later w.r.t. node 2.
+        if  c1==c2 and node_1.time > node_2.time:
+            return False
+        # Otherwise node 1 has a better subtour.
         return True
+
         # TODO END
 
     def equals(self, node_1, node_2):
@@ -225,17 +242,19 @@ class BranchingScheme:
 
         def __eq__(self, other):
             # TODO START
+
             return (
                 # Same last location.
                 self.node.j == other.node.j
                 # Same visited locations.
                 and self.node.visited == other.node.visited)
+
             # TODO END
 
     def dominates(self, node_1, node_2):
         # TODO START
-        #if (node_1.cost + self.instance.cost(node_1.j,0) <= node_2.cost+self.instance.cost(node_2.j,0) and node_1.time<=node_2.time):
-        if (node_1.cost  <= node_2.cost and node_1.time <= node_2.time):
+
+        if (node_1.cost <= node_2.cost and node_1.time <= node_2.time):
             return True
         return False
         
@@ -245,12 +264,15 @@ class BranchingScheme:
 
     def display(self, node):
         # TODO START
+
         d = node.cost + self.instance.cost(node.j, 0)
         return str(d)
+
         # TODO END
 
     def to_solution(self, node):
         # TODO START
+
         locations = []
         node_tmp = node
         while node_tmp.father is not None:
@@ -258,6 +280,7 @@ class BranchingScheme:
             node_tmp = node_tmp.father
         locations.reverse()
         return locations
+
         # TODO END
 
 

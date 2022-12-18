@@ -89,6 +89,7 @@ class PricingSolver:
     def __init__(self, instance):
         self.instance = instance
         # TODO START
+        # Initially none of the clients are visited
         self.visitedClients = None
         # TODO END
 
@@ -103,16 +104,17 @@ class PricingSolver:
         # TODO END
 
     def solve_pricing(self, duals):
-        # Build subproblem instance.
+        # Build subproblem instance
         # TODO START
         backTr = {}
         subInst = SubInst()
-        #add Depot                                                                                                        ???? value ?????          
+        # Add depot
         subInst.add_location(self.instance.locations[0].visit_interval,self.instance.locations[0].x,self.instance.locations[0].y,0)
-        # Here we construct a cost matrix to find the column of minimum reduced cost as described in 3.4 in the report.
         ordr=1
+        # We construct an el. short. path instance where values are the duals of the sol. to the master program
         for client_id, client in enumerate(self.instance.locations):
             value = duals[client_id]
+            # A negative dual would not be picked as a minimizer of reduced cost so we don't consider it
             if value <= 0:
                 continue
             if self.visitedClients[client_id]==0:
@@ -120,9 +122,9 @@ class PricingSolver:
                 backTr[ordr]=client.id
                 ordr+=1
         # TODO END
-        # Solve subproblem instance.
-        # TODO START 
-        # Here we solve problem 1 with a different cost matrix as described in 3.4 in the report.
+        # Solve subproblem instance
+        # TODO START
+        # Here we solve an el. short. path instance to find the min. reduced cost column
         bt = dynamic_programming(subInst)
         tmp = bt 
         bt = []
@@ -130,20 +132,22 @@ class PricingSolver:
             bt.append(backTr[i])
         # TODO END
         
+        # The problem is infeasible
         if (len(bt)==0):
-            return []    
+            return []
 
+        # Reconstruct the solution of the el. short. path instance
         dist = self.instance.duration(0,self.instance.locations[bt[0]].id) 
         for i in range(1,len(bt)):
             dist += instance.duration(instance.locations[i-1].id,instance.locations[i].id)
         dist += instance.duration(instance.locations[bt[-1]].id,0) 
     
-        # Retrieve column.
+        # Retrieve column from the el. short. path instance solution
         column = columngenerationsolverpy.Column()
         column.objective_coefficient = dist
-        for city in bt:
-            column.row_indices.append(city)
-            # Here we retrieve a_{ik} as defined in 3.3 in the report.
+        for client in bt:
+            column.row_indices.append(client)
+            # Here we retrieve a_{ik} as defined in 3.3 in the report
             column.row_coefficients.append(1)
         return [column]
 
@@ -158,7 +162,6 @@ def get_parameters(instance):
     p.objective_sense = "min"
     # Column bounds.
     p.column_lower_bound = 0
-    #maximum_dist*2
     p.column_upper_bound = maximum_dist*50
     # Row bounds.
     # Here we initialize constraints of the master program (section 3.3, equations 12-14 in the report).

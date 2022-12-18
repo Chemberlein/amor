@@ -134,8 +134,6 @@ class PricingSolver:
         for item_type_id, item_type in enumerate(self.instance.item_types):
             profit = duals[item_type_id]
             print(profit)
-            if profit <= 0:
-                continue
             for _ in range(self.filled_demands[item_type_id],self.instance.item_types[item_type_id].demand):
                 profits.append(profit)
                 weights.append(self.instance.item_types[item_type_id].weight)

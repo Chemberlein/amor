@@ -98,45 +98,52 @@ class PricingSolver:
     def __init__(self, instance):
         self.instance = instance
         # TODO START
+
+        # Initially no clients are visited
         self.visitedClients = None
+
         # TODO END
 
     def initialize_pricing(self, columns, fixed_columns):
         # TODO START
+
         self.visitedClients = [0] * len(instance.locations)
         for column_id, column_value in fixed_columns:
             column = columns[column_id]
             for row_index, row_coefficient in zip(column.row_indices,column.row_coefficients):
                 self.visitedClients[row_index] += (column_value * row_coefficient)
-        self.visitedClients[0]=1
+        self.visitedClients[0] = 1
+
         # TODO END
-
-
     def solve_pricing(self, duals):
         # Build subproblem instance.
         # TODO START
+
         backTr = {}
         subInst = SubInst()
-        #add Depot                                                                                                        ???? value ?????          
+        # Add depot
         subInst.add_location(self.instance.locations[0].visit_intervals,self.instance.locations[0].x,self.instance.locations[0].y,0)
-        # Here we construct a cost matrix to find the column of minimum reduced cost as described in 3.4 in the report.
         ordr=1
+        # We construct an el. short. path instance where values are the duals of the sol. to the master program
         for client_id, client in enumerate(self.instance.locations):
             value = duals[client_id]
+            # A negative dual would not be picked as a minimizer of reduced cost so we don't consider it
             if value <= 0:
                 continue
             if self.visitedClients[client_id]==0:
                 subInst.add_location(client.visit_intervals,client.x,client.y,value)
                 backTr[ordr]=client.id
                 ordr+=1
-        # TODO END
 
-        # Solve subproblem instance.
+        # TODO END
+        # Solve subproblem instance
         # TODO START
+
+        # Here we solve an el. short. path with slots instance to find the min. reduced cost column
         branching_scheme = BranchingScheme(subInst)
         output = treesearchsolverpy.iterative_beam_search(
                     branching_scheme,
-                    time_limit=30)
+                    time_limit=5)
         bt = branching_scheme.to_solution(output["solution_pool"].best)
         tmp = bt 
         bt = []
@@ -144,24 +151,26 @@ class PricingSolver:
             bt.append(backTr[i])
         
         # TODO END
-
-        # Retrieve column.
+        # Retrieve column
         column = columngenerationsolverpy.Column()
         # TODO START
+
+        # The problem is infeasible
         if (len(bt)==0):
             return []    
 
+        # Reconstruct the solution of the el. short. path with slots instance
         dist = self.instance.duration(0,self.instance.locations[bt[0]].id) 
         for i in range(1,len(bt)):
             dist += instance.duration(instance.locations[i-1].id,instance.locations[i].id)
         dist += instance.duration(instance.locations[bt[-1]].id,0) 
     
-        # Retrieve column.
+        # Retrieve column from the el. short. path with slots instance solution
         column = columngenerationsolverpy.Column()
         column.objective_coefficient = dist
         for city in bt:
             column.row_indices.append(city)
-            # Here we retrieve a_{ik} as defined in 3.3 in the report.
+            # Here we retrieve a_{ik} as defined in 3.3 in the report
             column.row_coefficients.append(1)
         # TODO END
 
@@ -178,7 +187,6 @@ def get_parameters(instance):
     p.objective_sense = "min"
     # Column bounds.
     p.column_lower_bound = 0
-    #maximum_dist*2
     p.column_upper_bound = maximum_dist*50
     # Row bounds.
     # Here we initialize constraints of the master program (section 3.3, equations 12-14 in the report).

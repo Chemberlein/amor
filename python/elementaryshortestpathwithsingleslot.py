@@ -88,34 +88,51 @@ class Instance:
 
 
 def dynamic_programming(instance):
+    # TODO START
+
+    # Initialize the list of clients without the debot.
     tmpLoc = [item for item in instance.locations if item.id!=0]
+    # Sort all clients by starting time.
     tmpLoc = sorted(tmpLoc,key = lambda x:x.visit_interval[0])
-    dp = [ math.inf for i in range(len(tmpLoc))]
-    backtracking = [[i.id] for i in tmpLoc]
+    # Initialize the table where i contains the opt. cost from depot to i.
+    T = [math.inf for i in range(len(tmpLoc))]
+    # Initialize the table where i contains the previous loc. in the opt. path from depot to i.
+    L = [[i.id] for i in tmpLoc]
     for i in range(len(tmpLoc)):
+        # Initially the price is +inf.
         price = math.inf
+        # A "live backtracking list" per location, so that we don't need to backtrack at the end.
         bt = []
+        # For each other location j.
         for j in range(1,i):
-            #if tmpLoc[i-j].visit_interval[1]+instance.duration(tmpLoc[i].id,tmpLoc[i-j].id)<tmpLoc[i].visit_interval[0]:
-            if price > dp[i-j]:
-                price = dp[i-j]
-                bt=backtracking[i-j]
-        #if tmpLoc[i].visit_interval[1]+instance.duration(tmpLoc[i].id,0)<instance.locations[0].visit_interval[0]:
+            # Check if it's feasible.
+            if tmpLoc[i-j].visit_interval[1]+instance.duration(tmpLoc[i].id,tmpLoc[i-j].id)<tmpLoc[i].visit_interval[0]:
+                # Recurrence relation.
+                if price > T[i-j]:
+                    price = T[i-j]
+                    bt = L[i-j]
+        # If in the opt. sol. there are intermediate locations between the depot and i.
         if len(bt)>0 and price+instance.cost(bt[-1],tmpLoc[i].id) < instance.cost(0,tmpLoc[i].id):
-            dp[i]=price+instance.cost(bt[-1],tmpLoc[i].id)
-            backtracking[i]=bt+backtracking[i]
+            # Recurrence relation.
+            T[i] = price+instance.cost(bt[-1],tmpLoc[i].id)
+            L[i] = bt+L[i]
         else:
-            dp[i]= instance.cost(0,tmpLoc[i].id)
-    maxi=-1
+            # Recurrence relation.
+            T[i] = instance.cost(0,tmpLoc[i].id)
+    # Look for the opt. solution from depot to i and back to depot.
+    opt_cost_id = -1
     m = math.inf
-    for i in range(len(dp)):
-        dp[i]=dp[i]+instance.cost(tmpLoc[i].id,0)
-        if (m>dp[i]):
-            maxi=i
-            m=dp[i]
-    if maxi == -1:
+    for i in range(len(T)):
+        T[i] = T[i]+instance.cost(tmpLoc[i].id,0)
+        if (m>T[i]):
+            opt_cost_id = i
+            m = T[i]
+    # There is no feasible solution.
+    if opt_cost_id == -1:
         return []
-    return backtracking[maxi]
+    return L[opt_cost_id]
+
+    # TODO END
 
 
 if __name__ == "__main__":
