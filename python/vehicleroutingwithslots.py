@@ -144,7 +144,6 @@ class PricingSolver:
         # TODO END
 
         # Retrieve column.
-        column = columngenerationsolverpy.Column()
         # TODO START
         # The problem is infeasible
         if (len(bt)==0):
@@ -153,7 +152,6 @@ class PricingSolver:
         # Reconstruct the solution of the el. short. path with slots instance
         dist = self.instance.duration(0,self.instance.locations[bt[0]].id) 
         for i in range(1,len(bt)):
-            #dist += instance.duration(instance.locations[i-1].id,instance.locations[i].id)
             dist += instance.duration(instance.locations[bt[i-1]].id,instance.locations[bt[i]].id)
         dist += instance.duration(instance.locations[bt[-1]].id,0) 
 

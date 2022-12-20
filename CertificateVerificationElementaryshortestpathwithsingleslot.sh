@@ -9,5 +9,5 @@ for i in {1..100}
 do
   echo
   echo "Instance $i"
-  python3 python/elementaryshortestpathwithsingleslot.py -a checker -i data/elementaryshortestpathwithslots/instance_${i}.json -c solutions/elementaryshortestpathwithsingleslot/certificate${i}.json
+  python3 python/elementaryshortestpathwithsingleslot.py -a checker -i data/elementaryshortestpathwithslots/instance_${i}.json -c certificates/elementaryshortestpathwithsingleslot/certificate${i}.json
 done

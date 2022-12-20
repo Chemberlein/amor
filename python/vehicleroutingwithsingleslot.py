@@ -113,10 +113,7 @@ class PricingSolver:
         # We construct an el. short. path instance where values are the duals of the sol. to the master program
         for client_id, client in enumerate(self.instance.locations):
             value = duals[client_id]
-            # A negative dual would not be picked as a minimizer of reduced cost so we don't consider it
-            #if value <= 0:
-            #    continue
-            if self.visitedClients[client_id]==0:
+            if self.visitedClients[client_id]<1:
                 subInst.add_location(client.visit_interval,client.x,client.y,value)
                 backTr[ordr]=client.id
                 ordr+=1
@@ -130,26 +127,28 @@ class PricingSolver:
         for i in tmp:
             bt.append(backTr[i])
         # TODO END
-
         # Retrieve column.
         # TODO START
+        # The problem is infeasible
         if (len(bt)==0):
-            return []
+            return []    
 
-        # Reconstruct the solution of the el. short. path instance
+        # Reconstruct the solution of the el. short. path with slots instance
         dist = self.instance.duration(0,self.instance.locations[bt[0]].id) 
         for i in range(1,len(bt)):
-            dist += instance.duration(instance.locations[i-1].id,instance.locations[i].id)
+            dist += instance.duration(instance.locations[bt[i-1]].id,instance.locations[bt[i]].id)
         dist += instance.duration(instance.locations[bt[-1]].id,0) 
-    
-        # Retrieve column from the el. short. path instance solution
+
+        # Retrieve column from the el. short. path with slots instance solution
         column = columngenerationsolverpy.Column()
         column.objective_coefficient = dist
-        for client in bt:
-            column.row_indices.append(client)
+        for city in bt:
+            column.row_indices.append(city)
             # Here we retrieve a_{ik} as defined in 3.3 in the report
             column.row_coefficients.append(1)
         # TODO END
+
+        
         return [column]
 
 
@@ -163,7 +162,7 @@ def get_parameters(instance):
     p.objective_sense = "min"
     # Column bounds.
     p.column_lower_bound = 0
-    p.column_upper_bound = maximum_dist*50
+    p.column_upper_bound = maximum_dist
     # Row bounds.
     # Here we initialize constraints of the master program (section 3.3, equations 12-14 in the report).
     for city in instance.locations:
@@ -176,7 +175,7 @@ def get_parameters(instance):
     p.row_coefficient_lower_bounds[0] = 0
     p.row_coefficient_upper_bounds[0] = 0
     # Dummy column objective coefficient.
-    p.dummy_column_objective_coefficient = maximum_dist
+    p.dummy_column_objective_coefficient = 2*maximum_dist
     # TODO END
     # Pricing solver.
     p.pricing_solver = PricingSolver(instance)

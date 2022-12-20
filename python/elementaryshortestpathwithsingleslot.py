@@ -96,7 +96,7 @@ def dynamic_programming(instance):
     tmpLoc = sorted(tmpLoc,key = lambda x:x.visit_interval[0])
     # Initialize the table where i contains the opt. cost from depot to i.
     T = [math.inf for i in range(len(tmpLoc))]
-    # Initialize the table where i contains the previous loc. in the opt. path from depot to i.
+    # Initialize the table where i contains all the previous loc. in the opt. path from depot to i.
     L = [[i.id] for i in tmpLoc]
     for i in range(len(tmpLoc)):
         # Initially the price is +inf.

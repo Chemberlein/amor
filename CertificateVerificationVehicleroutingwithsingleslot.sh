@@ -9,5 +9,5 @@ for i in {1..100}
 do
   echo
   echo "Instance $i"
-  python3 python/vehicleroutingwithsingleslot.py -a checker -i data/vehicleroutingwithslots/instance_${i}.json -c solutions/vehicleroutingwithsingleslot/certificate${i}.json
+  python3 python/vehicleroutingwithsingleslot.py -a checker -i data/vehicleroutingwithslots/instance_${i}.json -c certificates/vehicleroutingwithsingleslot/certificate${i}.json
 done
