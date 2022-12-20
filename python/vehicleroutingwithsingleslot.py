@@ -115,8 +115,8 @@ class PricingSolver:
         for client_id, client in enumerate(self.instance.locations):
             value = duals[client_id]
             # A negative dual would not be picked as a minimizer of reduced cost so we don't consider it
-            if value <= 0:
-                continue
+            #if value <= 0:
+            #    continue
             if self.visitedClients[client_id]==0:
                 subInst.add_location(client.visit_interval,client.x,client.y,value)
                 backTr[ordr]=client.id

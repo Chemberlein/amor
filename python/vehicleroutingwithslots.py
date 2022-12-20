@@ -60,36 +60,39 @@ class Instance:
             # Compute total_distance.
             total_travelled_distance = 0
             on_time = True
-            for locations in data["locations"]:
-                current_time = -math.inf
-                location_pred_id = 0
-                for location_id in locations:
-                    location = self.locations[location_id]
-                    d = self.duration(location_pred_id, location_id)
-                    total_travelled_distance += d
-                    t = current_time + d
-                    try:
-                        interval = min(
-                                (itrv for itrv in location.visit_intervals
-                                 if itrv[0] >= t),
-                                key=lambda interval: interval[1])
-                        current_time = interval[1]
-                    except ValueError:
-                        on_time = False
-                    location_pred_id = location_id
-                total_travelled_distance += self.duration(location_pred_id, 0)
-            # Compute number_of_locations.
-            number_of_duplicates = len(locations) - len(set(locations))
-
-            is_feasible = (
-                    (number_of_duplicates == 0)
-                    and (on_time)
-                    and 0 not in locations)
-            objective_value = total_travelled_distance
-            print(f"Number of duplicates: {number_of_duplicates}")
-            print(f"On time: {on_time}")
-            print(f"Total travelled distance: {total_travelled_distance}")
-            print(f"Feasible: {is_feasible}")
+            # Treating the empty case or where only the depot is given.
+            if (len(data["locations"])==0 or (len(data["locations"][0]))<1):
+                is_feasible = True
+                objective_value = 0
+            else : 
+                for locations in data["locations"]:
+                    current_time = -math.inf
+                    location_pred_id = 0
+                    for location_id in locations:
+                        location = self.locations[location_id]
+                        d = self.duration(location_pred_id, location_id)
+                        total_travelled_distance += d
+                        t = current_time + d
+                        try:
+                            interval = min(
+                                    (itrv for itrv in location.visit_intervals
+                                    if itrv[0] >= t),
+                                    key=lambda interval: interval[1])
+                            current_time = interval[1]
+                        except ValueError:
+                            on_time = False
+                        location_pred_id = location_id
+                    total_travelled_distance += self.duration(location_pred_id, 0)
+                number_of_duplicates = len(locations) - len(set(locations))
+                is_feasible = (
+                        (number_of_duplicates == 0)
+                        and (on_time)
+                        and 0 not in locations)
+                objective_value = total_travelled_distance
+                print(f"Number of duplicates: {number_of_duplicates}")
+                print(f"On time: {on_time}")
+                print(f"Total travelled distance: {total_travelled_distance}")
+                print(f"Feasible: {is_feasible}")
             return (is_feasible, objective_value)
 
 
@@ -106,7 +109,6 @@ class PricingSolver:
 
     def initialize_pricing(self, columns, fixed_columns):
         # TODO START
-
         self.visitedClients = [0] * len(instance.locations)
         for column_id, column_value in fixed_columns:
             column = columns[column_id]
@@ -127,10 +129,8 @@ class PricingSolver:
         # We construct an el. short. path instance where values are the duals of the sol. to the master program
         for client_id, client in enumerate(self.instance.locations):
             value = duals[client_id]
-            # A negative dual would not be picked as a minimizer of reduced cost so we don't consider it
-            if value <= 0:
-                continue
-            if self.visitedClients[client_id]==0:
+            # We don't take clients that were already visited
+            if self.visitedClients[client_id]<1:
                 subInst.add_location(client.visit_intervals,client.x,client.y,value)
                 backTr[ordr]=client.id
                 ordr+=1
@@ -143,13 +143,16 @@ class PricingSolver:
         branching_scheme = BranchingScheme(subInst)
         output = treesearchsolverpy.iterative_beam_search(
                     branching_scheme,
-                    time_limit=5)
+                    # time_limit=5,
+                    minimum_size_of_the_queue=256,
+                    maximum_size_of_the_queue=256,
+                    verbose=False)
         bt = branching_scheme.to_solution(output["solution_pool"].best)
         tmp = bt 
         bt = []
         for i in tmp:
             bt.append(backTr[i])
-        
+
         # TODO END
         # Retrieve column
         column = columngenerationsolverpy.Column()
@@ -162,9 +165,10 @@ class PricingSolver:
         # Reconstruct the solution of the el. short. path with slots instance
         dist = self.instance.duration(0,self.instance.locations[bt[0]].id) 
         for i in range(1,len(bt)):
-            dist += instance.duration(instance.locations[i-1].id,instance.locations[i].id)
+            #dist += instance.duration(instance.locations[i-1].id,instance.locations[i].id)
+            dist += instance.duration(instance.locations[bt[i-1]].id,instance.locations[bt[i]].id)
         dist += instance.duration(instance.locations[bt[-1]].id,0) 
-    
+
         # Retrieve column from the el. short. path with slots instance solution
         column = columngenerationsolverpy.Column()
         column.objective_coefficient = dist
@@ -172,6 +176,7 @@ class PricingSolver:
             column.row_indices.append(city)
             # Here we retrieve a_{ik} as defined in 3.3 in the report
             column.row_coefficients.append(1)
+            self.visitedClients[city]=1
         # TODO END
 
         return [column]
@@ -187,7 +192,7 @@ def get_parameters(instance):
     p.objective_sense = "min"
     # Column bounds.
     p.column_lower_bound = 0
-    p.column_upper_bound = maximum_dist*50
+    p.column_upper_bound = maximum_dist
     # Row bounds.
     # Here we initialize constraints of the master program (section 3.3, equations 12-14 in the report).
     for city in instance.locations:
@@ -200,7 +205,7 @@ def get_parameters(instance):
     p.row_coefficient_lower_bounds[0] = 0
     p.row_coefficient_upper_bounds[0] = 0
     # Dummy column objective coefficient.
-    p.dummy_column_objective_coefficient = maximum_dist
+    p.dummy_column_objective_coefficient = 2*maximum_dist
     # TODO END
     # Pricing solver.
     p.pricing_solver = PricingSolver(instance)
@@ -210,14 +215,37 @@ def get_parameters(instance):
 def to_solution(columns, fixed_columns):
     solution = []
     for column_id, column_value in fixed_columns:
+        #print("COLUMN ####### ", column, column_value)
+        #print(columns[column])
+        #exit()
         column = columns[column_id]
         s = []
         for row_index, row_coefficient in zip(column.row_indices,column.row_coefficients):
             s += [row_index] * row_coefficient
+        print("###### SOLUTION", s, column_value)
         solution.append(s)
     return solution
 
+"""
+def to_solution(columns, fixed_columns):
+    solution = []
+    for column, value in fixed_columns:
+        s = []
+        for index, coef in zip(column.row_indices, column.row_coefficients):
+            s += [index] * coef
+        solution.append((value, s))
+    return solution
+"""
 
+def to_solution_columns(columns, fixed_columns):
+    solution = []
+    for column, value in fixed_columns:
+        s = []
+        for index, coef in zip(column.row_indices, column.row_coefficients):
+            s += [index] * coef
+        solution.append(s)
+    return solution
+    
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description='')
@@ -259,29 +287,20 @@ if __name__ == "__main__":
                         [(s1, s1 + p1), (s2, s2 + p2)], x, y)
             instance.write(
                     args.instance + "_" + str(number_of_locations) + ".json")
-
-    elif args.algorithm == "column_generation":
-        instance = Instance(args.instance)
-        parameters = get_parameters(instance)
-        output = columngenerationsolverpy.column_generation(
-                parameters)
-        solution = to_solution(parameters.columns, output["solution"])
-        if args.certificate is not None:
-            data = {"locations": solution}
-            with open(args.certificate, 'w') as json_file:
-                json.dump(data, json_file)
-            print()
-            instance.check(args.certificate)
     else:
         instance = Instance(args.instance)
         parameters = get_parameters(instance)
-        if args.algorithm == "greedy":
+        if args.algorithm == "column_generation":
+            output = columngenerationsolverpy.column_generation(parameters)
+            solution = to_solution(parameters.columns, output["solution"])
+        elif args.algorithm == "greedy":
             output = columngenerationsolverpy.greedy(
                     parameters)
+            solution = to_solution_columns(parameters.columns, output["solution"])
         elif args.algorithm == "limited_discrepancy_search":
             output = columngenerationsolverpy.limited_discrepancy_search(
                     parameters)
-        solution = to_solution(parameters.columns, output["solution"])
+            solution = to_solution_columns(parameters.columns, output["solution"])
         if args.certificate is not None:
             data = {"locations": solution}
             with open(args.certificate, 'w') as json_file:
