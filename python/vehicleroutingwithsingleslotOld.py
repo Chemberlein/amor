@@ -4,6 +4,7 @@ import columngenerationsolverpy
 from elementaryshortestpathwithsingleslot import Instance as SubInst
 from elementaryshortestpathwithsingleslot import dynamic_programming
 
+
 class Location:
     id = None
     visit_interval = None
@@ -24,7 +25,6 @@ class Instance:
                         data["ys"])
                 for (intervals, x, y) in locations:
                     self.add_location(intervals[0], x, y)
-
     def add_location(self, visit_interval, x, y):
         location = Location()
         location.id = len(self.locations)
@@ -89,6 +89,7 @@ class PricingSolver:
     def __init__(self, instance):
         self.instance = instance
         # TODO START
+        # Initially none of the clients are visited
         self.visitedClients = None
         # TODO END
 
@@ -103,7 +104,7 @@ class PricingSolver:
         # TODO END
 
     def solve_pricing(self, duals):
-        # Build subproblem instance.
+        # Build subproblem instance
         # TODO START
         backTr = {}
         subInst = SubInst()
@@ -121,18 +122,17 @@ class PricingSolver:
                 backTr[ordr]=client.id
                 ordr+=1
         # TODO END
-
-        # Solve subproblem instance.
+        # Solve subproblem instance
         # TODO START
+        # Here we solve an el. short. path instance to find the min. reduced cost column
         bt = dynamic_programming(subInst)
         tmp = bt 
         bt = []
         for i in tmp:
             bt.append(backTr[i])
         # TODO END
-
-        # Retrieve column.
-        # TODO START
+        
+        # The problem is infeasible
         if (len(bt)==0):
             return []
 
@@ -149,7 +149,6 @@ class PricingSolver:
             column.row_indices.append(client)
             # Here we retrieve a_{ik} as defined in 3.3 in the report
             column.row_coefficients.append(1)
-        # TODO END
         return [column]
 
 
@@ -185,10 +184,11 @@ def get_parameters(instance):
 
 def to_solution(columns, fixed_columns):
     solution = []
-    for column, value in fixed_columns:
+    for column_id, column_value in fixed_columns:
+        column = columns[column_id]
         s = []
-        for index, coef in zip(column.row_indices, column.row_coefficients):
-            s += [index] * coef
+        for row_index, row_coefficient in zip(column.row_indices,column.row_coefficients):
+            s += [row_index] * row_coefficient
         solution.append(s)
     return solution
 
@@ -219,31 +219,28 @@ if __name__ == "__main__":
 
     elif args.algorithm == "column_generation":
         instance = Instance(args.instance)
-        output = columngenerationsolverpy.column_generation(
-                get_parameters(instance))
-
+        parameters =get_parameters(instance) 
+        output = columngenerationsolverpy.column_generation(parameters)
+        solution = to_solution(parameters.columns, output["solution"])
+        if args.certificate is not None:
+            data = {"locations": solution}
+            with open(args.certificate, 'w') as json_file:
+                json.dump(data, json_file)
+            print()
+            instance.check(args.certificate)
     else:
         instance = Instance(args.instance)
-        if(len(instance.locations)<=1):
-            solution = [[]]
-            if args.certificate is not None:
-                data = {"locations": solution}
-                with open(args.certificate, 'w') as json_file:
-                    json.dump(data, json_file)
-                print()
-                instance.check(args.certificate)    
-        else:
-            parameters = get_parameters(instance)
-            if args.algorithm == "greedy":
-                output = columngenerationsolverpy.greedy(
-                        parameters)
-            elif args.algorithm == "limited_discrepancy_search":
-                output = columngenerationsolverpy.limited_discrepancy_search(
-                        parameters)
-            solution = to_solution(parameters.columns, output["solution"])
-            if args.certificate is not None:
-                data = {"locations": solution}
-                with open(args.certificate, 'w') as json_file:
-                    json.dump(data, json_file)
-                print()
-                instance.check(args.certificate)
+        parameters = get_parameters(instance)
+        if args.algorithm == "greedy":
+            output = columngenerationsolverpy.greedy(
+                    parameters)
+        elif args.algorithm == "limited_discrepancy_search":
+            output = columngenerationsolverpy.limited_discrepancy_search(
+                    parameters)
+        solution = to_solution(parameters.columns, output["solution"])
+        if args.certificate is not None:
+            data = {"locations": solution}
+            with open(args.certificate, 'w') as json_file:
+                json.dump(data, json_file)
+            print()
+            instance.check(args.certificate)
