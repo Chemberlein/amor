@@ -1,0 +1,78 @@
+======================================
+       Column Generation Solver       
+======================================
+
+Algorithm
+---------
+Greedy
+
+Parameters
+----------
+Linear programming solver:     CLP
+Time limit:                    inf
+objective coefficient: 31
+row indices: [8, 2, 6, 3, 1]
+row coefficients: [1, 1, 1, 1, 1]
+objective coefficient: 19
+row indices: [4, 7]
+row coefficients: [1, 1]
+objective coefficient: 12
+row indices: [5]
+row coefficients: [1]
+objective coefficient: 27
+row indices: [4, 6]
+row coefficients: [1, 1]
+objective coefficient: 10
+row indices: [2, 7]
+row coefficients: [1, 1]
+objective coefficient: 11
+row indices: [8, 7]
+row coefficients: [1, 1]
+objective coefficient: 30
+row indices: [4, 6, 1]
+row coefficients: [1, 1, 1]
+objective coefficient: 28
+row indices: [4, 6, 3]
+row coefficients: [1, 1, 1]
+objective coefficient: 32
+row indices: [4, 6, 3, 1]
+row coefficients: [1, 1, 1, 1]
+objective coefficient: 19
+row indices: [4, 2]
+row coefficients: [1, 1]
+objective coefficient: 12
+row indices: [5]
+row coefficients: [1]
+objective coefficient: 14
+row indices: [8, 2, 7]
+row coefficients: [1, 1, 1]
+objective coefficient: 10
+row indices: [2, 7]
+row coefficients: [1, 1]
+objective coefficient: 16
+row indices: [4]
+row coefficients: [1]
+objective coefficient: 10
+row indices: [1]
+row coefficients: [1]
+objective coefficient: 16
+row indices: [4]
+row coefficients: [1]
+
+Final statistics
+----------------
+Solution value:              58
+Bound:                       60.66666660999999
+Absolute gap:                -2.666666609999993
+Relative gap:                -4.4
+Total number of columns:     13
+Time:                        0.107      
+Time LP solve:               0.093      
+Time pricing:                0.004      
+
+Checker
+-------
+Number of duplicates: 0
+On time: True
+Total travelled distance: 58
+Feasible: True

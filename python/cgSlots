@@ -1,0 +1,97 @@
+======================================
+       Column Generation Solver       
+======================================
+
+Algorithm
+---------
+Column Generation
+
+Parameters
+----------
+Linear programming solver:     CLP
+Maximum number of iterations:  inf
+Time limit:                    inf
+
+      Time      It           Obj     Col
+      ----      --           ---     ---
+     0.006       0   1696.000000       0
+objective coefficient: 26
+row indices: [8, 2, 7, 3, 5]
+row coefficients: [1, 1, 1, 1, 1]
+     0.022       1    662.000000       1
+objective coefficient: 30
+row indices: [4, 6, 1]
+row coefficients: [1, 1, 1]
+     0.044       2     56.000000       2
+objective coefficient: 22
+row indices: [2, 6]
+row coefficients: [1, 1]
+     0.070       3     56.000000       3
+objective coefficient: 26
+row indices: [3, 6, 1]
+row coefficients: [1, 1, 1]
+     0.096       4     56.000000       4
+objective coefficient: 27
+row indices: [8, 6, 3, 4]
+row coefficients: [1, 1, 1, 1]
+     0.119       5     56.000000       5
+objective coefficient: 10
+row indices: [2, 7]
+row coefficients: [1, 1]
+     0.137       6     56.000000       6
+objective coefficient: 28
+row indices: [5, 3, 6, 1]
+row coefficients: [1, 1, 1, 1]
+     0.152       7     56.000000       7
+objective coefficient: 15
+row indices: [8, 7, 1]
+row coefficients: [1, 1, 1]
+     0.168       8     56.000000       8
+objective coefficient: 25
+row indices: [4, 7, 5]
+row coefficients: [1, 1, 1]
+     0.182       9     56.000000       9
+objective coefficient: 29
+row indices: [4, 3, 1, 2]
+row coefficients: [1, 1, 1, 1]
+     0.197      10     56.000000      10
+objective coefficient: 23
+row indices: [5, 2, 1, 8]
+row coefficients: [1, 1, 1, 1]
+     0.209      11     52.708333      11
+objective coefficient: 24
+row indices: [4, 7, 1, 2]
+row coefficients: [1, 1, 1, 1]
+     0.224      12     51.583333      12
+objective coefficient: 29
+row indices: [5, 6, 1, 2]
+row coefficients: [1, 1, 1, 1]
+     0.238      13     51.166667      13
+objective coefficient: 16
+row indices: [2, 7, 5]
+row coefficients: [1, 1, 1]
+     0.253      14     49.666667      14
+objective coefficient: 16
+row indices: [4, 5]
+row coefficients: [1, 1]
+     0.266      15     49.666667      15
+objective coefficient: 16
+row indices: [8, 7, 1, 2]
+row coefficients: [1, 1, 1, 1]
+     0.280      16     48.200000      16
+objective coefficient: 30
+row indices: [5, 3, 6, 4]
+row coefficients: [1, 1, 1, 1]
+     0.294      17     46.000000      17
+objective coefficient: 14
+row indices: [2, 7, 1]
+row coefficients: [1, 1, 1]
+     0.307      18     46.000000      18
+objective coefficient: 25
+row indices: [8, 6, 3, 5]
+row coefficients: [1, 1, 1, 1]
+     0.323      19     46.000000      19
+objective coefficient: 11
+row indices: [2, 7, 8]
+row coefficients: [1, 1, 1]
+     0.336      20     46.000000      20

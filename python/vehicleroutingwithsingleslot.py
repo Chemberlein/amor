@@ -148,7 +148,8 @@ class PricingSolver:
             column.row_coefficients.append(1)
         # TODO END
 
-        
+        print(column)
+        print(self.visitedClients)
         return [column]
 
 

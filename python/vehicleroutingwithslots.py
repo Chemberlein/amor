@@ -163,7 +163,7 @@ class PricingSolver:
             # Here we retrieve a_{ik} as defined in 3.3 in the report
             column.row_coefficients.append(1)
         # TODO END
-
+        print(column)
         return [column]
 
 

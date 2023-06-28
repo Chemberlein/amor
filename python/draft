@@ -1,0 +1,19 @@
+Now i will present dynamique program that we develop to solve Elementary shortest path with single slot.
+Here is small visual example of this problem :
+we have 5 clients each of them have time slot 
+Important property of this problem that we could pre order clients based on time slot opening.
+Becouse for example we for shure know that clients 4 and 1 could be visited only before 3 due to time slot constraint, how evere we still could not visit client 4 before client 3 due to end of time slot of client 4.
+We say  that tour is feasiable if it doesn't fiolate the time slot constraint , for example tour 1,3 is feasible.
+This property alow as to construct recurence relation for Ti , 
+where Ti represent minimal cost of the tour that starts at the depot and ends at client i
+Ti equals to minimum between cost of going from depot to client i 
+and cost of extension of the tour that end at the client j with client i, with the condition that j,i is feasible tour.
+Using this recurence relation we develop algorithm witch i will show on the small example 
+We have a table that represent value Ti for each client
+We start with client 4 becose he have earlyest time slot opening we could see that only tour from depot is feseble , then T4 equals to cost of going from depot to client 4,
+We have same situation for the client 1 because tour 4,1 is not feaseble.
+for client 3 we could extend tour that ends at the client 1 and get cost lower then cost of going from depot to client 3.
+We have inverse situation for client 2 where cost of extending tour that ends at client 1 higher then cost of going from the depot to client 2.
+For client 5 we could extend tour that ends at client 4 and 1 and we chose extention that have lower cost.
+When we compute all Ti we find cost of extention of each tour with depot, and minimal one will be cost of our solution, 
+then we could find tour with simple backtracking.
